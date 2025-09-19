@@ -1,0 +1,132 @@
+[
+  {
+    "id": "tab-mqtt-toggle",
+    "type": "tab",
+    "label": "MQTT Toggle",
+    "disabled": false
+  },
+  {
+    "id": "ui-tab",
+    "type": "ui_tab",
+    "name": "Dashboard",
+    "icon": "dashboard",
+    "order": 1
+  },
+  {
+    "id": "ui-group",
+    "type": "ui_group",
+    "name": "Main",
+    "tab": "ui-tab",
+    "order": 1,
+    "disp": true,
+    "width": "6"
+  },
+  {
+    "id": "ui-switch",
+    "type": "ui_switch",
+    "z": "tab-mqtt-toggle",
+    "name": "MQTT On/Off",
+    "label": "Приём MQTT",
+    "group": "ui-group",
+    "order": 1,
+    "onvalue": true,
+    "onvalueType": "bool",
+    "offvalue": false,
+    "offvalueType": "bool",
+    "passthru": true,
+    "x": 170,
+    "y": 120,
+    "wires": [["chg-flag"]]
+  },
+  {
+    "id": "chg-flag",
+    "type": "change",
+    "z": "tab-mqtt-toggle",
+    "name": "flow.mqttEnabled = payload",
+    "rules": [
+      {"t": "set", "p": "mqttEnabled", "pt": "flow", "to": "payload", "tot": "msg"}
+    ],
+    "x": 420,
+    "y": 120,
+    "wires": [[]]
+  },
+  {
+    "id": "inj-init-true",
+    "type": "inject",
+    "z": "tab-mqtt-toggle",
+    "name": "Init ON at deploy",
+    "props": [{"p": "payload"}],
+    "payload": "true",
+    "payloadType": "bool",
+    "once": true,
+    "onceDelay": 0.2,
+    "x": 170,
+    "y": 170,
+    "wires": [["chg-flag"]]
+  },
+  {
+    "id": "mqtt-in",
+    "type": "mqtt in",
+    "z": "tab-mqtt-toggle",
+    "name": "MQTT Sensor",
+    "topic": "sensor/temperature",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt-broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "x": 150,
+    "y": 240,
+    "wires": [["sw-enabled"]]
+  },
+  {
+    "id": "sw-enabled",
+    "type": "switch",
+    "z": "tab-mqtt-toggle",
+    "name": "flow.mqttEnabled?",
+    "property": "mqttEnabled",
+    "propertyType": "flow",
+    "rules": [{"t": "true"}, {"t": "else"}],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 2,
+    "x": 400,
+    "y": 240,
+    "wires": [["dbg-pass"], ["dbg-block"]]
+  },
+  {
+    "id": "dbg-pass",
+    "type": "debug",
+    "z": "tab-mqtt-toggle",
+    "name": "PASSED (enabled)",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "complete": "true",
+    "x": 640,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "dbg-block",
+    "type": "debug",
+    "z": "tab-mqtt-toggle",
+    "name": "BLOCKED (disabled)",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "complete": "true",
+    "x": 650,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "mqtt-broker",
+    "type": "mqtt-broker",
+    "name": "Configure me",
+    "broker": "localhost",
+    "port": "1883",
+    "clientid": ""
+  }
+]

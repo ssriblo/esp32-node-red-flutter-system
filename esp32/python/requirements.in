@@ -1,0 +1,4 @@
+# requirements.in
+matplotlib>=3.10,<3.11
+pyserial>=3.5,<3.6
+numpy>=2.3,<2.4

@@ -1,0 +1,331 @@
+// ChatGPT link: https://chatgpt.com/share/689dc34a-44f4-8009-af1a-88a6419c3144
+
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+/// ====== НАСТРОЙКИ ПОД ТВОЮ VM ======
+const String kBrokerHost = '130.61.123.45'; // IP Oracle VM с Mosquitto
+const int kBrokerPort = 1883;               // незашифрованный MQTT
+const String kClientId  = 'flutter_client_01';
+
+const String kTopicSensors = 'esp32/sensors'; // JSON: {"temp": 28.5, "hum": 60}
+const String kTopicAlarm   = 'esp32/alarm';   // "ON" / "OFF"
+
+/// ====== МОДЕЛЬ ТОЧКИ ГРАФИКА ======
+class TempPoint {
+  final DateTime t;
+  final double value;
+  TempPoint(this.t, this.value);
+}
+
+/// ====== MQTT СЕРВИС ======
+class MqttService {
+  late MqttServerClient client;
+  final void Function(Map<String, dynamic> json) onSensorJson;
+  final void Function(String alarm) onAlarm;
+
+  MqttService({
+    required this.onSensorJson,
+    required this.onAlarm,
+  }) {
+    client = MqttServerClient(kBrokerHost, kClientId)
+      ..port = kBrokerPort
+      ..keepAlivePeriod = 30
+      ..autoReconnect = true
+      ..onConnected = _onConnected
+      ..onDisconnected = _onDisconnected
+      ..resubscribeOnAutoReconnect = true
+      ..logging(on: false);
+  }
+
+  Future<void> connect() async {
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier(kClientId)
+        .startClean(); // без сохранённой сессии
+
+    client.connectionMessage = connMess;
+
+    try {
+      await client.connect(); // без логина/пароля (allow_anonymous true)
+    } catch (_) {
+      client.disconnect();
+      rethrow;
+    }
+
+    client.updates?.listen((events) {
+      // events — список полученных сообщений за "тик"
+      for (final e in events) {
+        final recMess = e.payload as MqttPublishMessage;
+        final topic = e.topic;
+        final payload =
+            MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+
+        if (topic == kTopicSensors) {
+          try {
+            final jsonMap = jsonDecode(payload) as Map<String, dynamic>;
+            onSensorJson(jsonMap);
+          } catch (_) {
+            // игнорируем битые payload'ы
+          }
+        } else if (topic == kTopicAlarm) {
+          onAlarm(payload.trim());
+        }
+      }
+    });
+  }
+
+  void _onConnected() {
+    client.subscribe(kTopicSensors, MqttQos.atMostOnce);
+    client.subscribe(kTopicAlarm,   MqttQos.atMostOnce);
+  }
+
+  void _onDisconnected() {
+    // можно показать тост/баннер в UI через колбэки, если нужно
+  }
+
+  void dispose() {
+    client.disconnect();
+  }
+}
+
+/// ====== ПРИЛОЖЕНИЕ ======
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'ESP32 Monitor',
+      theme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        useMaterial3: true,
+      ),
+      home: const DashboardPage(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  late final MqttService _mqtt;
+  final List<TempPoint> _points = <TempPoint>[];
+  String _alarm = 'OFF';
+  double? _lastTemp;
+  double? _lastHum;
+
+  static const int _maxPoints = 120; // ~10 минут при периоде 5 сек
+
+  @override
+  void initState() {
+    super.initState();
+    _mqtt = MqttService(
+      onSensorJson: (json) {
+        final now = DateTime.now();
+        final temp = (json['temp'] as num?)?.toDouble();
+        final hum  = (json['hum']  as num?)?.toDouble();
+        if (temp != null) {
+          setState(() {
+            _lastTemp = temp;
+            _points.add(TempPoint(now, temp));
+            if (_points.length > _maxPoints) {
+              _points.removeAt(0);
+            }
+          });
+        }
+        if (hum != null) {
+          setState(() => _lastHum = hum);
+        }
+      },
+      onAlarm: (value) {
+        setState(() => _alarm = value.toUpperCase() == 'ON' ? 'ON' : 'OFF');
+      },
+    );
+
+    _connectMqtt();
+  }
+
+  Future<void> _connectMqtt() async {
+    try {
+      await _mqtt.connect();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('MQTT connect error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _mqtt.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final alarmOn = _alarm == 'ON';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('ESP32 — Temperature & Alarm'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.thermostat),
+                const SizedBox(width: 6),
+                Text(_lastTemp != null ? '${_lastTemp!.toStringAsFixed(1)} °C' : '—'),
+                const SizedBox(width: 16),
+                const Icon(Icons.water_drop),
+                const SizedBox(width: 6),
+                Text(_lastHum != null ? '${_lastHum!.toStringAsFixed(0)} %' : '—'),
+              ],
+            ),
+          )
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _AlarmCard(alarmOn: alarmOn),
+          const SizedBox(height: 16),
+          _TempChart(points: _points),
+          const SizedBox(height: 8),
+          Text(
+            'Broker: $kBrokerHost:$kBrokerPort • Topic: $kTopicSensors',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ====== ВИДЖЕТ АЛАРМА ======
+class _AlarmCard extends StatelessWidget {
+  final bool alarmOn;
+  const _AlarmCard({required this.alarmOn});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 1,
+      child: ListTile(
+        leading: Icon(
+          alarmOn ? Icons.warning_amber_rounded : Icons.check_circle,
+          color: alarmOn ? Colors.red : Colors.green,
+          size: 32,
+        ),
+        title: Text(
+          alarmOn ? 'ALARM: Temperature threshold exceeded' : 'Normal',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: alarmOn ? Colors.red : Colors.green,
+          ),
+        ),
+        subtitle: const Text('Topic: esp32/alarm'),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: alarmOn ? Colors.red.withOpacity(.1) : Colors.green.withOpacity(.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(alarmOn ? 'ON' : 'OFF'),
+        ),
+      ),
+    );
+  }
+}
+
+/// ====== ВИДЖЕТ ГРАФИКА ======
+class _TempChart extends StatelessWidget {
+  final List<TempPoint> points;
+  const _TempChart({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    final spots = points
+        .map((p) => FlSpot(p.t.millisecondsSinceEpoch.toDouble(), p.value))
+        .toList();
+
+    final minX = spots.isNotEmpty ? spots.first.x : 0.0;
+    final maxX = spots.isNotEmpty ? spots.last.x : 1.0;
+
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 24, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Temperature (°C)', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 240,
+              child: LineChart(
+                LineChartData(
+                  minX: minX,
+                  maxX: maxX,
+                  lineBarsData: [
+                    LineChartBarData(
+                      isCurved: true,
+                      barWidth: 2,
+                      spots: spots,
+                      dotData: const FlDotData(show: false),
+                    ),
+                  ],
+                  gridData: const FlGridData(show: true),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: const Border(
+                      left: BorderSide(),
+                      bottom: BorderSide(),
+                      right: BorderSide(color: Colors.transparent),
+                      top: BorderSide(color: Colors.transparent),
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 24,
+                        interval: ((maxX - minX) / 4).clamp(1, double.infinity),
+                        getTitlesWidget: (value, meta) {
+                          final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                          final label =
+                              '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                          return Text(label, style: const TextStyle(fontSize: 11));
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: true, reservedSize: 28),
+                    ),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

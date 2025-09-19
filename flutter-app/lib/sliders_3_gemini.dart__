@@ -1,0 +1,286 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // Импортируем пакет HTTP
+import 'dart:convert'; // Для работы с JSON (хотя для URL-параметров может не понадобиться, но полезно для будущего)
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Parameter Control',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: const ParameterControlScreen(),
+    );
+  }
+}
+
+class ParameterControlScreen extends StatefulWidget {
+  const ParameterControlScreen({super.key});
+
+  @override
+  State<ParameterControlScreen> createState() => _ParameterControlScreenState();
+}
+
+class _ParameterControlScreenState extends State<ParameterControlScreen> {
+  // Текущие значения для каждого параметра
+  double _parameter1Value = 100.0;
+  double _parameter2Value = 200.0;
+  double _parameter3Value = 300.0;
+
+  // IP-адрес вашего ESP32.
+  // Если ESP32 работает в режиме точки доступа (SoftAP), это будет 192.168.4.1.
+  // Если он подключен к вашей домашней сети (STA), вам нужно будет найти его IP-адрес в роутере.
+  // static const String _esp32IpAddress = '192.168.4.1';
+  static const String _esp32IpAddress = '192.168.15.252';
+  String _sendStatus = ''; // Для отображения статуса отправки
+
+  // Функция для отправки параметров на ESP32
+  Future<void> _sendParametersToESP32() async {
+    setState(() {
+      _sendStatus = 'Отправка...'; // Обновляем статус
+    });
+
+    // Формируем URL с параметрами
+    // Мы отправляем значения как параметры запроса (query parameters)
+    final Uri url = Uri.parse(
+        'http://$_esp32IpAddress/set_parameters?p1=${_parameter1Value.round()}&p2=${_parameter2Value.round()}&p3=${_parameter3Value.round()}');
+
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 5)); // Используем GET запрос и таймаут
+
+      if (response.statusCode == 200) {
+        // Успешный ответ от ESP32
+        setState(() {
+          _sendStatus = 'Успешно отправлено!';
+        });
+        print('Параметры успешно отправлены: ${response.body}');
+      } else {
+        // Ошибка HTTP
+        setState(() {
+          _sendStatus = 'Ошибка отправки: ${response.statusCode}';
+        });
+        print('Ошибка отправки параметров: ${response.statusCode} ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      // Ошибка сети (нет подключения, таймаут и т.д.)
+      setState(() {
+        _sendStatus = 'Ошибка подключения: ${e.toString()}';
+      });
+      print('Ошибка подключения к ESP32: $e');
+    }
+    // Сбрасываем статус через некоторое время
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _sendStatus = '';
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Parameter Control'), // Заголовок AppBar
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Card(
+            elevation: 4.0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15.0),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Уменьшаем размер колонки до минимума
+                crossAxisAlignment: CrossAxisAlignment.start, // Выравнивание по левому краю
+                children: <Widget>[
+                  // Параметр 1
+                  const Text(
+                    'Parameter 1',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Slider(
+                          value: _parameter1Value,
+                          min: 0,
+                          max: 500,
+                          divisions: 100, // Деления для более точной настройки
+                          label: _parameter1Value.round().toString(),
+                          onChanged: (double newValue) {
+                            setState(() {
+                              _parameter1Value = newValue;
+                            });
+                          },
+                        ),
+                      ),
+                      // Отображение текущего значения параметра 1
+                      Container(
+                        width: 80,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Text(
+                          _parameter1Value.round().toString(),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20), // Отступ
+
+                  // Параметр 2
+                  const Text(
+                    'Parameter 2',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Slider(
+                          value: _parameter2Value,
+                          min: 0,
+                          max: 500,
+                          divisions: 100,
+                          label: _parameter2Value.round().toString(),
+                          onChanged: (double newValue) {
+                            setState(() {
+                              _parameter2Value = newValue;
+                            });
+                          },
+                        ),
+                      ),
+                      // Отображение текущего значения параметра 2
+                      Container(
+                        width: 80,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Text(
+                          _parameter2Value.round().toString(),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20), // Отступ
+
+                  // Параметр 3
+                  const Text(
+                    'Parameter 3',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Slider(
+                          value: _parameter3Value,
+                          min: 0,
+                          max: 500,
+                          divisions: 100,
+                          label: _parameter3Value.round().toString(),
+                          onChanged: (double newValue) {
+                            setState(() {
+                              _parameter3Value = newValue;
+                            });
+                          },
+                        ),
+                      ),
+                      // Отображение текущего значения параметра 3
+                      Container(
+                        width: 80,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Text(
+                          _parameter3Value.round().toString(),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30), // Отступ перед блоком "Current Values"
+
+                  // Блок "Current Values"
+                  const Text(
+                    'Current Values',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        'P1: ${_parameter1Value.round()}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      Text(
+                        'P2: ${_parameter2Value.round()}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      Text(
+                        'P3: ${_parameter3Value.round()}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Кнопка "Отправить на устройство"
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: _sendParametersToESP32,
+                      icon: const Icon(Icons.send),
+                      label: const Text('Отправить на устройство'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        textStyle: const TextStyle(fontSize: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Отображение статуса отправки
+                  Center(
+                    child: Text(
+                      _sendStatus,
+                      style: TextStyle(
+                        color: _sendStatus.contains('Ошибка') ? Colors.red : Colors.green,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

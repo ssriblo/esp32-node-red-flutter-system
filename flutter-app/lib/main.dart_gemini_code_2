@@ -1,0 +1,339 @@
+// GEMINI code:
+// https://g.co/gemini/share/37aea48324c6
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; // Though not strictly needed for this simple GET, good practice.
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Parameter Control',
+      // Define a custom theme for a more cohesive look
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple, // A richer primary color
+        // Use a consistent font family if desired, e.g., 'Inter' (requires adding to pubspec.yaml)
+        // fontFamily: 'Inter',
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.deepPurple, // AppBar color
+          foregroundColor: Colors.white, // AppBar text/icon color
+          elevation: 8.0, // Add shadow to AppBar
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        sliderTheme: SliderThemeData(
+          activeTrackColor: Colors.deepPurpleAccent, // Color of the slider track when active
+          inactiveTrackColor: Colors.deepPurple.shade100, // Color when inactive
+          thumbColor: Colors.deepPurple, // Color of the slider thumb
+          overlayColor: Colors.deepPurple.withOpacity(0.2), // Color of the overlay when pressed
+          valueIndicatorColor: Colors.deepPurple.shade700, // Color of the value indicator
+          valueIndicatorTextStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+          ),
+          trackHeight: 6.0, // Thicker track
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10.0), // Larger thumb
+          overlayShape: const RoundSliderOverlayShape(overlayRadius: 20.0),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepPurple, // Button background color
+            foregroundColor: Colors.white, // Button text/icon color
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), // More rounded corners for buttons
+            ),
+            elevation: 8.0, // Add more shadow to buttons
+            shadowColor: Colors.deepPurple.shade200, // Custom shadow color
+          ),
+        ),
+      ),
+      home: const ParameterControlScreen(),
+    );
+  }
+}
+
+class ParameterControlScreen extends StatefulWidget {
+  const ParameterControlScreen({super.key});
+
+  @override
+  State<ParameterControlScreen> createState() => _ParameterControlScreenState();
+}
+
+class _ParameterControlScreenState extends State<ParameterControlScreen> {
+  // Current values for each parameter
+  double _parameter1Value = 100.0;
+  double _parameter2Value = 200.0;
+  double _parameter3Value = 300.0;
+
+  // IP-адрес вашего ESP32.
+  // Если ESP32 работает в режиме точки доступа (SoftAP), это будет 192.168.4.1.
+  // Если он подключен к вашей домашней сети (STA), вам нужно будет найти его IP-адрес в роутере.
+  // static const String _esp32IpAddress = '192.168.4.1';
+  static const String _esp32IpAddress = '192.168.15.252';
+  String _sendStatus = ''; // For displaying send status
+
+  // Function to send parameters to ESP32
+  Future<void> _sendParametersToESP32() async {
+    setState(() {
+      _sendStatus = 'Отправка...';
+    });
+
+    // POST header with JSON content type
+    final Uri url = Uri.parse('http://$_esp32IpAddress/set_parameters'); // URL без параметров
+
+    // Создаем тело запроса в формате JSON
+    final Map<String, int> data = {
+      'p1': _parameter1Value.round(),
+      'p2': _parameter2Value.round(),
+      'p3': _parameter3Value.round(),
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8', // Указываем тип контента JSON
+        },
+        body: jsonEncode(data), // Кодируем Map в JSON строку для тела запроса
+      ).timeout(const Duration(seconds: 5));
+
+    // GET header at URL with parameters
+    // final Uri url = Uri.parse(
+    //     'http://$_esp32IpAddress/set_parameters?p1=${_parameter1Value.round()}&p2=${_parameter2Value.round()}&p3=${_parameter3Value.round()}');
+
+    // try {
+    //   final response = await http.get(url).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _sendStatus = 'Успешно отправлено!';
+        });
+        print('Параметры успешно отправлены: ${response.body}');
+      } else {
+        setState(() {
+          _sendStatus = 'Ошибка отправки: ${response.statusCode}';
+        });
+        print('Ошибка отправки параметров: ${response.statusCode} ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      setState(() {
+        _sendStatus = 'Ошибка подключения: ${e.toString()}';
+      });
+      print('Ошибка подключения к ESP32: $e');
+    }
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _sendStatus = '';
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.deepPurple.shade50, // Light background for the screen
+      appBar: AppBar(
+        title: const Text('Управление Параметрами'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Card(
+            elevation: 12.0, // Increased card shadow
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0), // More rounded card corners
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(25.0), // More internal padding
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _buildParameterControl(
+                    'Параметр 1',
+                    _parameter1Value,
+                    (newValue) => setState(() => _parameter1Value = newValue),
+                  ),
+                  const SizedBox(height: 25),
+
+                  _buildParameterControl(
+                    'Параметр 2',
+                    _parameter2Value,
+                    (newValue) => setState(() => _parameter2Value = newValue),
+                  ),
+                  const SizedBox(height: 25),
+
+                  _buildParameterControl(
+                    'Параметр 3',
+                    _parameter3Value,
+                    (newValue) => setState(() => _parameter3Value = newValue),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Current Values Section
+                  const Text(
+                    'Текущие значения',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.shade50,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.deepPurple.shade200, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: <Widget>[
+                        _buildValueDisplay('P1', _parameter1Value.round()),
+                        _buildValueDisplay('P2', _parameter2Value.round()),
+                        _buildValueDisplay('P3', _parameter3Value.round()),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Send to Device Button
+                  Center(
+                    child: Column(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _sendParametersToESP32,
+                          icon: const Icon(Icons.send_rounded), // Rounded send icon
+                          label: const Text('Отправить на устройство'),
+                        ),
+                        const SizedBox(height: 15),
+                        // Status message with a subtle animation
+                        AnimatedOpacity(
+                          opacity: _sendStatus.isNotEmpty ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            _sendStatus,
+                            style: TextStyle(
+                              color: _sendStatus.contains('Ошибка') ? Colors.red.shade700 : Colors.green.shade700,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build each parameter control block
+  Widget _buildParameterControl(
+      String title, double value, ValueChanged<double> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurple, // Title color
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Slider(
+                value: value,
+                min: 0,
+                max: 500,
+                divisions: 100,
+                label: value.round().toString(),
+                onChanged: onChanged,
+              ),
+            ),
+            // Display for the current parameter value
+            Container(
+              width: 80,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.shade50, // Lighter background for value display
+                borderRadius: BorderRadius.circular(10.0), // Rounded corners
+                border: Border.all(color: Colors.deepPurple.shade100, width: 1.0), // Subtle border
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                    offset: const Offset(0, 2), // Shadow for depth
+                  ),
+                ],
+              ),
+              child: Text(
+                value.round().toString(),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Helper method to build individual value displays in "Current Values" section
+  Widget _buildValueDisplay(String label, int value) {
+    return Column(
+      children: [
+        Text(
+          '$label:',
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.deepPurple.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          value.toString(),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurple,
+          ),
+        ),
+      ],
+    );
+  }
+}

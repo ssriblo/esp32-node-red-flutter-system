@@ -1,0 +1,372 @@
+[
+    {
+        "id": "be15e267f724bf5f",
+        "type": "tab",
+        "label": "Flow 3",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "ed149643aed0ae61",
+        "type": "inject",
+        "z": "be15e267f724bf5f",
+        "name": "Every 2 sec",
+        "props": [],
+        "repeat": "2",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 300,
+        "y": 260,
+        "wires": [
+            [
+                "22503bb132f88eba"
+            ]
+        ]
+    },
+    {
+        "id": "22503bb132f88eba",
+        "type": "function",
+        "z": "be15e267f724bf5f",
+        "name": "Temperature Sensor",
+        "func": "// Simulation of temperature\nmsg.payload = 20 + Math.random() * 8; // 20-28°C\nmsg.topic = \"temperature\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 480,
+        "y": 180,
+        "wires": [
+            [
+                "4635bf5ecd16505c",
+                "fefbd0fe2404bdcb",
+                "a5185bbb5350ed7f"
+            ]
+        ]
+    },
+    {
+        "id": "3c9862168518ca6b",
+        "type": "inject",
+        "z": "be15e267f724bf5f",
+        "name": "Setpoint = 24°C",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "setpoint",
+        "payload": "24",
+        "payloadType": "num",
+        "x": 300,
+        "y": 320,
+        "wires": [
+            [
+                "4635bf5ecd16505c"
+            ]
+        ]
+    },
+    {
+        "id": "4635bf5ecd16505c",
+        "type": "function",
+        "z": "be15e267f724bf5f",
+        "name": "PID Algorithm",
+        "func": "// Function node: \"PID Algorithm\"\n\nvar pidHelper = global.get('pidHelper');\n\n// Initialization on first run\nif (!context.initialized) {\n    pidHelper.init(context);\n    context.initialized = true;\n}\n\nvar processValue = (msg.topic === 'temperature') ? msg.payload : context.processValue;\nif (msg.topic === 'setpoint') {\n    context.setpoint = msg.payload;\n    context.processValue = processValue;\n    return null;\n}\nvar setpoint = context.setpoint !== undefined ? context.setpoint : 34;\n\nvar result = pidHelper.compute(context, processValue, setpoint);\ncontext.processValue = processValue;\n\nmsg.payload = {\n    process_value: processValue.toFixed(2),\n    setpoint: setpoint,\n    output: result.output.toFixed(2),\n    p: result.p.toFixed(2),\n    i: result.i.toFixed(2),\n    d: result.d.toFixed(2),\n    kp: context.kp,\n    ki: context.ki,\n    kd: context.kd\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 220,
+        "wires": [
+            [
+                "1991bb4ad283800d",
+                "b1a4143b7f89bfdf"
+            ]
+        ]
+    },
+    {
+        "id": "1991bb4ad283800d",
+        "type": "debug",
+        "z": "be15e267f724bf5f",
+        "name": "PID Output",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 930,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "fefbd0fe2404bdcb",
+        "type": "debug",
+        "z": "be15e267f724bf5f",
+        "name": "Temperature",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 670,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "b1a4143b7f89bfdf",
+        "type": "function",
+        "z": "be15e267f724bf5f",
+        "name": "Heater Control",
+        "func": "const pidOutput = msg.payload.output;\n\n// Convert to control action\nif (pidOutput > 75) {\n    msg.status = \"ON (100%)\";\n} else if (pidOutput > 50) {\n    msg.status = \"ON (75%)\";\n} else if (pidOutput > 25) {\n    msg.status = \"ON (50%)\";\n} else if (pidOutput > 5) {\n    msg.status = \"ON (25%)\";\n} else {\n    msg.status = \"OFF\";\n}\n\nmsg.payload = `PID: ${pidOutput}% | Heater: ${msg.status}`;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 900,
+        "y": 280,
+        "wires": [
+            [
+                "b29fabf5156087e2"
+            ]
+        ]
+    },
+    {
+        "id": "b29fabf5156087e2",
+        "type": "debug",
+        "z": "be15e267f724bf5f",
+        "name": "Heater Control",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1160,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "68aa4a4d88f68647",
+        "type": "inject",
+        "z": "be15e267f724bf5f",
+        "name": "Kp = 3.0",
+        "props": [
+            {
+                "p": "payload",
+                "v": "3.0",
+                "vt": "num"
+            },
+            {
+                "p": "topic",
+                "v": "kp",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 300,
+        "y": 380,
+        "wires": [
+            [
+                "a1a5c8401678ef47"
+            ]
+        ]
+    },
+    {
+        "id": "daca29a60d13f003",
+        "type": "inject",
+        "z": "be15e267f724bf5f",
+        "name": "Ki = 0.2",
+        "props": [
+            {
+                "p": "payload",
+                "v": "0.2",
+                "vt": "num"
+            },
+            {
+                "p": "topic",
+                "v": "ki",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 300,
+        "y": 420,
+        "wires": [
+            [
+                "a1a5c8401678ef47"
+            ]
+        ]
+    },
+    {
+        "id": "d5c42da618831b95",
+        "type": "inject",
+        "z": "be15e267f724bf5f",
+        "name": "Kd = 0.8",
+        "props": [
+            {
+                "p": "payload",
+                "v": "0.8",
+                "vt": "num"
+            },
+            {
+                "p": "topic",
+                "v": "kd",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 300,
+        "y": 460,
+        "wires": [
+            [
+                "a1a5c8401678ef47"
+            ]
+        ]
+    },
+    {
+        "id": "a1a5c8401678ef47",
+        "type": "function",
+        "z": "be15e267f724bf5f",
+        "name": "Update PID Params",
+        "func": "// Update PID parameters in context\nif (msg.topic === \"kp\") {\n    context.kp = msg.payload;\n    node.warn(\"Kp updated to: \" + msg.payload);\n} else if (msg.topic === \"ki\") {\n    context.ki = msg.payload;\n    node.warn(\"Ki updated to: \" + msg.payload);\n} else if (msg.topic === \"kd\") {\n    context.kd = msg.payload;\n    node.warn(\"Kd updated to: \" + msg.payload);\n}\n\nreturn null;",
+        "outputs": 0,
+        "noerr": 0,
+        "x": 600,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "a5185bbb5350ed7f",
+        "type": "ui_chart",
+        "z": "be15e267f724bf5f",
+        "name": "",
+        "group": "ui_group_main",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "chart",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "cubic",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 970,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fbac23aaaf6434ea",
+        "type": "comment",
+        "z": "be15e267f724bf5f",
+        "name": "pid_helper.js HowTo",
+        "info": "At folder ~/.node-red created file pid_helper.js :\n// ~/.node-red/pid_helper.js\n\nmodule.exports = {\n  init: function(ctx) {\n    ctx.lastTime = Date.now();\n    ctx.lastError = 0;\n    ctx.integral = 0;\n    ctx.kp = 2.5;\n    ctx.ki = 0.1;\n    ctx.kd = 0.5;\n  },\n\n  compute: function(ctx, processValue, setpoint) {\n    var now = Date.now();\n    var dt = (now - ctx.lastTime) / 1000;\n    ctx.lastTime = now;\n\n    if (typeof processValue === 'undefined') {\n      console.warn('PID compute skipped — processValue is undefined');\n      return { output: 0, p: 0, i: 0, d: 0 };\n    }\n\n    if (dt <= 0) {\n      console.warn('PID compute skipped — dt non-positive:', dt);\n      return { output: 0, p: 0, i: 0, d: 0 };\n    }\n\n    var error = setpoint - processValue;\n    var P = ctx.kp * error;\n    ctx.integral += error * dt;\n    var I = ctx.ki * ctx.integral;\n    var D = ctx.kd * ((error - ctx.lastError) / dt);\n    ctx.lastError = error;\n\n    var output = P + I + D;\n    output = Math.max(0, Math.min(100, output));\n\n    return { output: output, p: P, i: I, d: D };\n  }\n\n};\n\n\n/////\n\nAt ~/.node-red/settings.js find functionGlobalContext and edit:\n\nfunctionGlobalContext: {\n    pidHelper: require('./pid_helper.js'),\n},\n\n/////\n\nAfter that need re-run Node-Red. So need kill current process and run again or use something that:\nsudo systemctl restart nodered.service\n",
+        "x": 330,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "2fbf27a95fe112b3",
+        "type": "inject",
+        "z": "be15e267f724bf5f",
+        "name": "reset chart",
+        "props": [
+            {
+                "p": "payload",
+                "v": "[]",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "object",
+        "payloadType": "date",
+        "x": 760,
+        "y": 40,
+        "wires": [
+            [
+                "a5185bbb5350ed7f"
+            ]
+        ]
+    },
+    {
+        "id": "ui_group_main",
+        "type": "ui_group",
+        "name": "Main",
+        "tab": "ui_tab_main",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "ui_tab_main",
+        "type": "ui_tab",
+        "name": "Dashboard",
+        "icon": "dashboard",
+        "order": 1
+    },
+    {
+        "id": "d4b9a3d427c09f84",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]

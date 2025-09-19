@@ -1,0 +1,132 @@
+// GEMINI code:
+// https://g.co/gemini/share/37aea48324c6
+
+
+
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ArduinoJson.h> // Подключаем библиотеку для работы с JSON
+
+// Определяем SSID (имя вашей сети Wi-Fi) и пароль вашей домашней сети
+const char* ssid = "ENAiKOON-Technik";     // <-- ИЗМЕНИТЕ НА ИМЯ ВАШЕЙ СЕТИ WI-FI
+const char* password = "EN2020ik"; // <-- ИЗМЕНИТЕ НА ПАРОЛЬ ВАШЕЙ СЕТИ WI-FI
+
+// Создаем объект веб-сервера, слушающий на порту 80 (стандартный HTTP-порт)
+WebServer server(80);
+
+// Переменные для хранения полученных значений параметров
+int param1 = 0;
+int param2 = 0;
+int param3 = 0;
+
+// Обработчик для корневого URL ("/")
+void handleRoot() {
+  server.send(200, "text/plain", "Hello from ESP32!"); // Отправляем простое приветствие
+}
+
+// Обработчик для URL "/set_parameters"
+void handleSetParameters() {
+  Serial.println("\n--- Received POST request ---");
+  Serial.print("URI: ");
+  Serial.println(server.uri()); // Логируем полный URI запроса
+  Serial.print("Method: ");
+  Serial.println((server.method() == HTTP_GET) ? "GET" : "POST"); // Логируем метод запроса
+
+  // Логируем содержимое тела запроса (payload)
+  if (server.hasHeader("Content-Type")) {
+    Serial.print("Content-Type: ");
+    Serial.println(server.header("Content-Type"));
+  }
+  Serial.print("Body (raw): ");
+  Serial.println(server.arg("plain")); // Получаем сырое тело POST запроса
+
+  // Создаем объект JSON-документа для парсинга
+  // Размер буфера может потребоваться увеличить в зависимости от сложности JSON
+  StaticJsonDocument<200> doc; 
+
+  // Парсим JSON из тела запроса
+  DeserializationError error = deserializeJson(doc, server.arg("plain"));
+
+  if (error) {
+    // Обработка ошибок парсинга JSON
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    server.send(400, "text/plain", "Error: Invalid JSON format.");
+    return;
+  }
+
+  // Извлекаем значения параметров из JSON
+  // Используем .as<int>() для безопасного приведения типа
+  int received_p1 = doc["p1"] | 0; // Значение по умолчанию 0, если "p1" отсутствует
+  int received_p2 = doc["p2"] | 0; // Значение по умолчанию 0, если "p2" отсутствует
+  int received_p3 = doc["p3"] | 0; // Значение по умолчанию 0, если "p3" отсутствует
+
+  // Обновляем глобальные переменные
+  param1 = received_p1;
+  param2 = received_p2;
+  param3 = received_p3;
+
+  // Выводим полученные значения в Serial Monitor для отладки
+  Serial.print("Parameter 1 (from JSON): ");
+  Serial.println(param1);
+  Serial.print("Parameter 2 (from JSON): ");
+  Serial.println(param2);
+  Serial.print("Parameter 3 (from JSON): ");
+  Serial.println(param3);
+
+  // Отправляем успешный ответ обратно клиенту (Flutter-приложению)
+  server.send(200, "text/plain", "Parameters received successfully!");
+  Serial.println("--------------------------\n");
+}
+
+// Обработчик для несуществующих страниц (404 Not Found)
+void handleNotFound() {
+  Serial.println("\n--- 404 Not Found ---");
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments (should be empty for POST if expecting body): ";
+  message += server.args(); // Для GET здесь могут быть аргументы URL
+  message += "\n";
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  Serial.println(message); // Этот вывод уже содержит детальную информацию
+  server.send(404, "text/plain", message);
+  Serial.println("---------------------\n");
+}
+
+void setup() {
+  Serial.begin(115200); // Инициализация Serial Monitor
+
+  Serial.print("Connecting to WiFi: ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/", handleRoot);
+  // Регистрируем обработчик для POST-запросов на /set_parameters
+  server.on("/set_parameters", HTTP_POST, handleSetParameters); 
+
+  server.onNotFound(handleNotFound);
+
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+void loop() {
+  server.handleClient();
+}

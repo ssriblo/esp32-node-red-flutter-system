@@ -1,0 +1,904 @@
+[
+    {
+        "id": "af6e1b7f31665550",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "93ec51638a4f4bcc",
+        "type": "group",
+        "z": "af6e1b7f31665550",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "7ddc40a1a391443d",
+            "1d9f176cbcffa87c",
+            "be6a8f4016d6dba9"
+        ],
+        "x": 114,
+        "y": 1119,
+        "w": 632,
+        "h": 82
+    },
+    {
+        "id": "6611e72e47f4a0a0",
+        "type": "group",
+        "z": "af6e1b7f31665550",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "45662f387f0f5844",
+            "ae93374f25b5a11c"
+        ],
+        "x": 148,
+        "y": 439,
+        "w": 604,
+        "h": 368
+    },
+    {
+        "id": "ae93374f25b5a11c",
+        "type": "group",
+        "z": "af6e1b7f31665550",
+        "g": "6611e72e47f4a0a0",
+        "style": {
+            "stroke": "#999999",
+            "stroke-opacity": "1",
+            "fill": "none",
+            "fill-opacity": "1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#a4a4a4"
+        },
+        "nodes": [
+            "f258deb90974f741",
+            "ecc7f4e344f4f0c3",
+            "e2d6a60f98dc9581",
+            "9cf7aa816d3475a8",
+            "bc75c68a43cb676e",
+            "5cd4677a7c663f56",
+            "33824838f24ce491"
+        ],
+        "x": 174,
+        "y": 519,
+        "w": 552,
+        "h": 262
+    },
+    {
+        "id": "24e716ae9d8aa496",
+        "type": "mqtt in",
+        "z": "af6e1b7f31665550",
+        "name": "ESP32 Sensors",
+        "topic": "esp32/sensors",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "8da8c6a1cc35881f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 180,
+        "wires": [
+            [
+                "62797d9c14c167d8",
+                "51f68399a904fc43",
+                "74f51223069e1a41",
+                "45662f387f0f5844"
+            ]
+        ]
+    },
+    {
+        "id": "736da217dd02851d",
+        "type": "ui_chart",
+        "z": "af6e1b7f31665550",
+        "name": "Temperature Chart",
+        "group": "ui_group_main",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Temperature (°C)",
+        "chartType": "line",
+        "legend": "true",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "\"blank\"",
+        "dot": false,
+        "ymin": "10",
+        "ymax": "55",
+        "removeOlder": "1",
+        "removeOlderPoints": "20",
+        "removeOlderUnit": "60",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#ff0000",
+            "#aec7e8",
+            "#ff7f0e",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1050,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1410abd4f9f24408",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "name": "Check Temp Threshold",
+        "func": "if (msg.payload.temp > 30) {\n    return { topic: \"esp32/alarm\", payload: \"ON\" };\n} else {\n    return { topic: \"esp32/alarm\", payload: \"OFF\" };\n}",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "26bcb6d8b43032ae",
+        "type": "mqtt out",
+        "z": "af6e1b7f31665550",
+        "name": "ESP32 Alarm Out 2",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "8da8c6a1cc35881f",
+        "x": 950,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "d23d4c5b1e1e669d",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 2",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 800,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "62797d9c14c167d8",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 520,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "51f68399a904fc43",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "name": "get temperature",
+        "func": "msg.payload = msg.payload.temp;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 640,
+        "y": 300,
+        "wires": [
+            [
+                "736da217dd02851d"
+            ]
+        ]
+    },
+    {
+        "id": "74f51223069e1a41",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "name": "Temp control",
+        "func": "if (msg.payload.temp > 30) {\n    return { topic: \"esp32/heater\", payload: \"0.0\" };\n} else {\n    return { topic: \"esp32/heater\", payload: \"0.5\" };\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 160,
+        "wires": [
+            [
+                "d23d4c5b1e1e669d"
+            ]
+        ]
+    },
+    {
+        "id": "713adc04f8a48364",
+        "type": "mqtt out",
+        "z": "af6e1b7f31665550",
+        "name": "MQTT heater value",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "8da8c6a1cc35881f",
+        "x": 1130,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "7ddc40a1a391443d",
+        "type": "http in",
+        "z": "af6e1b7f31665550",
+        "g": "93ec51638a4f4bcc",
+        "name": "GET /esp32_params",
+        "url": "/esp32_params",
+        "method": "get",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 230,
+        "y": 1160,
+        "wires": [
+            [
+                "be6a8f4016d6dba9"
+            ]
+        ]
+    },
+    {
+        "id": "1d9f176cbcffa87c",
+        "type": "http response",
+        "z": "af6e1b7f31665550",
+        "g": "93ec51638a4f4bcc",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "Content-Type": "text/plain"
+        },
+        "x": 670,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "be6a8f4016d6dba9",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "g": "93ec51638a4f4bcc",
+        "name": "ESP32 Parameters",
+        "func": "msg.payload = {\n    \"HeatCapasity\": Math.floor(100),\n    \"HeatLossCoeff\": Math.floor(5),\n    \"Alpha\": Math.floor(20),\n    \"tAbient\": Math.floor(20),\n    \"delayTime\": Math.floor(5),\n    \"stepSecound\": Math.floor(1),\n    \"tRoom\": Math.floor(20),\n    \"tSensor\": Math.floor(20)\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 1160,
+        "wires": [
+            [
+                "1d9f176cbcffa87c"
+            ]
+        ]
+    },
+    {
+        "id": "f258deb90974f741",
+        "type": "inject",
+        "z": "af6e1b7f31665550",
+        "g": "ae93374f25b5a11c",
+        "name": "Setpoint = 24°C",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "setpoint",
+        "payload": "24",
+        "payloadType": "num",
+        "x": 300,
+        "y": 600,
+        "wires": [
+            [
+                "ecc7f4e344f4f0c3"
+            ]
+        ]
+    },
+    {
+        "id": "ecc7f4e344f4f0c3",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "g": "ae93374f25b5a11c",
+        "name": "PID Algorithm",
+        "func": "// Function node: \"PID Algorithm\"\n\nvar pidHelper = global.get('pidHelper');\n\n// Initialization on first run\nif (!context.initialized) {\n    pidHelper.init(context);\n\n    context.kp = 0.2\n    context.ki = 0.03\n    context.kd = 0.1\n    context.initialized = true;\n}\n\ncontext.kp = context.global.get('kp');\ncontext.ki = context.global.get('ki');\ncontext.kd = context.global.get('kd');\n\nvar processValue = (msg.topic === 'temperature') ? msg.payload : context.processValue;\n\nif (msg.topic === 'setpoint') {\n    context.setpoint = msg.payload;\n    context.processValue = processValue;\n    return null;\n}\n\nif (msg.topic === 'setpoint2') {\n    context.setpoint = msg.payload.setpoint;\n    context.processValue = processValue;\n    return null;\n}\n\n\nvar setpoint = context.setpoint !== undefined ? context.setpoint : 34;\n\nvar result = pidHelper.compute(context, processValue, setpoint);\ncontext.processValue = processValue;\n\nmsg.payload = {\n    process_value: processValue.toFixed(2),\n    setpoint: setpoint,\n    output: result.output.toFixed(2) * 0.1,\n    p: result.p.toFixed(4),\n    i: result.i.toFixed(4),\n    d: result.d.toFixed(4),\n\n    kp: context.kp,\n    ki: context.ki,\n    kd: context.kd\n};\n\nreturn msg;\n\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 620,
+        "wires": [
+            [
+                "4cba38916b856513",
+                "43b35fc49a4fd9cb",
+                "54b353fd67eba5c5",
+                "e336be8c78bf1849"
+            ]
+        ]
+    },
+    {
+        "id": "e2d6a60f98dc9581",
+        "type": "inject",
+        "z": "af6e1b7f31665550",
+        "g": "ae93374f25b5a11c",
+        "name": "Kp = 0.2",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "kp",
+        "payload": "0.2",
+        "payloadType": "num",
+        "x": 320,
+        "y": 660,
+        "wires": [
+            [
+                "5cd4677a7c663f56"
+            ]
+        ]
+    },
+    {
+        "id": "9cf7aa816d3475a8",
+        "type": "inject",
+        "z": "af6e1b7f31665550",
+        "g": "ae93374f25b5a11c",
+        "name": "Ki = 0.03",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "ki",
+        "payload": "0.03",
+        "payloadType": "num",
+        "x": 320,
+        "y": 700,
+        "wires": [
+            [
+                "5cd4677a7c663f56"
+            ]
+        ]
+    },
+    {
+        "id": "bc75c68a43cb676e",
+        "type": "inject",
+        "z": "af6e1b7f31665550",
+        "g": "ae93374f25b5a11c",
+        "name": "Kd = 0.1",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "kd",
+        "payload": "0.1",
+        "payloadType": "num",
+        "x": 320,
+        "y": 740,
+        "wires": [
+            [
+                "5cd4677a7c663f56"
+            ]
+        ]
+    },
+    {
+        "id": "5cd4677a7c663f56",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "g": "ae93374f25b5a11c",
+        "name": "One Time Update PID Params",
+        "func": "// Update PID parameters in context\nif (msg.topic === \"kp\") {\n    context.global.set('kp', msg.payload);\n} else if (msg.topic === \"ki\") {\n    context.global.set('ki', msg.payload);\n} else if (msg.topic === \"kd\") {\n    context.global.set('kd', msg.payload);\n}\nmsg.payload = \"Данные сохранены в контекст\";\nreturn msg;\n",
+        "outputs": 0,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "45662f387f0f5844",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "g": "6611e72e47f4a0a0",
+        "name": "Temperature Sensor",
+        "func": "// msg.payload = 20 + Math.random() * 8; // 20-28°C\nmsg.payload = msg.payload.temp;\nmsg.topic = \"temperature\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 480,
+        "wires": [
+            [
+                "ecc7f4e344f4f0c3"
+            ]
+        ]
+    },
+    {
+        "id": "43b35fc49a4fd9cb",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 3",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "4cba38916b856513",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "name": "function 1",
+        "func": "// return msg;\nvar out = msg.payload.output\nreturn { topic: \"esp32/heater\", payload: out};\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 460,
+        "wires": [
+            [
+                "9ba30eb1046c4a11",
+                "3feda5d4714818e8"
+            ]
+        ]
+    },
+    {
+        "id": "9ba30eb1046c4a11",
+        "type": "link out",
+        "z": "af6e1b7f31665550",
+        "name": "link out 1",
+        "mode": "link",
+        "links": [
+            "7261c7998039bae4"
+        ],
+        "x": 995,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "7261c7998039bae4",
+        "type": "link in",
+        "z": "af6e1b7f31665550",
+        "name": "link in 1",
+        "links": [
+            "9ba30eb1046c4a11"
+        ],
+        "x": 1005,
+        "y": 80,
+        "wires": [
+            [
+                "713adc04f8a48364"
+            ]
+        ]
+    },
+    {
+        "id": "3feda5d4714818e8",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 4",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1140,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "54b353fd67eba5c5",
+        "type": "flogger",
+        "z": "af6e1b7f31665550",
+        "name": "",
+        "logfile": "nodered_1.log",
+        "inputchoice": "fullmsg",
+        "inputobject": "payload",
+        "inputobjectType": "msg",
+        "inputmoustache": "Recieved payload {{payload}} and topic {{topic}}",
+        "loglevel": "INFO",
+        "logconfig": "8564c2a37dbd3db9",
+        "sendpane": "",
+        "x": 1010,
+        "y": 620,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "33824838f24ce491",
+        "type": "inject",
+        "z": "af6e1b7f31665550",
+        "g": "ae93374f25b5a11c",
+        "name": "Setpoint = 29°C",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "setpoint",
+        "payload": "29",
+        "payloadType": "num",
+        "x": 300,
+        "y": 560,
+        "wires": [
+            [
+                "ecc7f4e344f4f0c3"
+            ]
+        ]
+    },
+    {
+        "id": "4ad208de6fdd1dfe",
+        "type": "mqtt in",
+        "z": "af6e1b7f31665550",
+        "name": "Flutter PID Parameters In",
+        "topic": "flutter/pid_parameters",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "8da8c6a1cc35881f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 270,
+        "y": 880,
+        "wires": [
+            [
+                "ce7c11a91cebc624",
+                "a8ef215f46d510b8"
+            ]
+        ]
+    },
+    {
+        "id": "a8ef215f46d510b8",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 880,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "ce7c11a91cebc624",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "name": "PID parameters update from MQTT",
+        "func": "// Update PID parameters in context\nif (msg.topic === \"flutter/pid_parameters\") {\n    context.global.set('kp', msg.payload.kp);\n    context.global.set('ki', msg.payload.ki);\n    context.global.set('kd', msg.payload.kd);\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 900,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7b840e9b1574b90f",
+        "type": "mqtt in",
+        "z": "af6e1b7f31665550",
+        "name": "setpoint2",
+        "topic": "setpoint2",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "8da8c6a1cc35881f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 280,
+        "wires": [
+            [
+                "d5a1ca9ad7a4eb9f",
+                "ecc7f4e344f4f0c3"
+            ]
+        ]
+    },
+    {
+        "id": "d5a1ca9ad7a4eb9f",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 6",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 440,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "e336be8c78bf1849",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "name": "setpoint",
+        "func": "msg.payload = {\n    setpoint: msg.payload.setpoint,\n};return msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 700,
+        "wires": [
+            [
+                "7998038de9db08b1"
+            ]
+        ]
+    },
+    {
+        "id": "7998038de9db08b1",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 7",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1140,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "8b4d1c0cf9dc90bb",
+        "type": "mqtt in",
+        "z": "af6e1b7f31665550",
+        "name": "ESP32 PID Parameters In",
+        "topic": "esp32/pid_parameters",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "8da8c6a1cc35881f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 270,
+        "y": 1000,
+        "wires": [
+            [
+                "7e0fe93cf4e973cd",
+                "459dd2b7ca337c49"
+            ]
+        ]
+    },
+    {
+        "id": "459dd2b7ca337c49",
+        "type": "debug",
+        "z": "af6e1b7f31665550",
+        "name": "debug 8",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 880,
+        "y": 980,
+        "wires": []
+    },
+    {
+        "id": "7e0fe93cf4e973cd",
+        "type": "function",
+        "z": "af6e1b7f31665550",
+        "name": "PID parameters update from MQTT",
+        "func": "// Update PID parameters in context\nif (msg.topic === \"esp32/pid_parameters\") {\n    context.global.set('kp', msg.payload.kp);\n    context.global.set('ki', msg.payload.ki);\n    context.global.set('kd', msg.payload.kd);\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 1020,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8da8c6a1cc35881f",
+        "type": "mqtt-broker",
+        "name": "MQTT Broker 2",
+        "broker": "localhost",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "ui_group_main",
+        "type": "ui_group",
+        "name": "Main",
+        "tab": "ui_tab_main",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "8564c2a37dbd3db9",
+        "type": "config-log",
+        "logname": "flogging_config_1.txt",
+        "logdir": "/home/opc/",
+        "stamp": "utc",
+        "logstyle": "plain",
+        "logrotate": false,
+        "logcompress": false,
+        "logrotatecount": "5",
+        "logsize": "1000"
+    },
+    {
+        "id": "ui_tab_main",
+        "type": "ui_tab",
+        "name": "Dashboard",
+        "icon": "dashboard",
+        "order": 1
+    },
+    {
+        "id": "fa34a8abdd8e9490",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6",
+            "node-red-contrib-flogger": "1.2.2"
+        }
+    }
+]

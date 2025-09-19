@@ -1,0 +1,144 @@
+import 'package:flutter/material.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_browser_client.dart'; // <-- это идёт внутри mqtt_client
+import 'package:fl_chart/fl_chart.dart';
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'ESP32 Monitor',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const MonitorPage(),
+    );
+  }
+}
+
+class MonitorPage extends StatefulWidget {
+  const MonitorPage({super.key});
+
+  @override
+  State<MonitorPage> createState() => _MonitorPageState();
+}
+
+class _MonitorPageState extends State<MonitorPage> {
+  late MqttBrowserClient client;
+  List<FlSpot> tempData = [];
+  double alarmState = 0; // 0=OFF, 1=ON
+  int timeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _connect();
+  }
+
+  Future<void> _connect() async {
+    client = MqttBrowserClient('ws://YOUR_VM_IP:9001/mqtt', 'flutter_web');
+    client.logging(on: false);
+    client.onDisconnected = _onDisconnected;
+    client.onConnected = _onConnected;
+    client.onSubscribed = _onSubscribed;
+
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier('flutter_web')
+        .startClean()
+        .withWillQos(MqttQos.atMostOnce);
+    client.connectionMessage = connMess;
+
+    try {
+      await client.connect();
+    } catch (e) {
+      debugPrint('MQTT connect error: $e');
+      client.disconnect();
+    }
+
+    client.updates?.listen((c) {
+      final recMess = c[0].payload as MqttPublishMessage;
+      final payload =
+          MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+
+      debugPrint('MQTT [${c[0].topic}] $payload');
+
+      if (c[0].topic == 'esp32/sensors') {
+        final data = jsonDecode(payload);
+        final double temp = (data['temp'] as num).toDouble();
+        setState(() {
+          tempData.add(FlSpot(timeIndex.toDouble(), temp));
+          if (tempData.length > 20) tempData.removeAt(0);
+          timeIndex++;
+        });
+      }
+
+      if (c[0].topic == 'esp32/alarm') {
+        setState(() {
+          alarmState = payload == 'ON' ? 1 : 0;
+        });
+      }
+    });
+  }
+
+  void _onConnected() {
+    debugPrint('MQTT connected');
+    client.subscribe('esp32/sensors', MqttQos.atMostOnce);
+    client.subscribe('esp32/alarm', MqttQos.atMostOnce);
+  }
+
+  void _onDisconnected() => debugPrint('MQTT disconnected');
+  void _onSubscribed(String topic) => debugPrint('Subscribed to $topic');
+
+  void _toggleAlarm() {
+    final msg = alarmState == 1 ? 'OFF' : 'ON';
+    final builder = MqttClientPayloadBuilder();
+    builder.addString(msg);
+    client.publishMessage('esp32/alarm', MqttQos.atMostOnce, builder.payload!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('ESP32 Monitor')),
+      body: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: LineChart(LineChartData(
+                minX: 0,
+                maxX: 20,
+                minY: 0,
+                maxY: 60,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: tempData,
+                    isCurved: true,
+                    barWidth: 3,
+                    color: Colors.red,
+                  ),
+                ],
+              )),
+            ),
+          ),
+          Text(
+            'Alarm: ${alarmState == 1 ? "ON" : "OFF"}',
+            style: TextStyle(
+              fontSize: 20,
+              color: alarmState == 1 ? Colors.red : Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          ElevatedButton(
+            onPressed: _toggleAlarm,
+            child: Text(alarmState == 1 ? 'Turn OFF Alarm' : 'Turn ON Alarm'),
+          ),
+        ],
+      ),
+    );
+  }
+}

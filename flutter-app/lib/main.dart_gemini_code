@@ -1,0 +1,120 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Download Progress Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: const DownloadScreen(),
+    );
+  }
+}
+
+class DownloadScreen extends StatefulWidget {
+  const DownloadScreen({super.key});
+
+  @override
+  State<DownloadScreen> createState() => _DownloadScreenState();
+}
+
+class _DownloadScreenState extends State<DownloadScreen> {
+  double _downloadProgress = 0.0;
+  bool _isDownloading = false;
+
+  // Function to simulate a download
+  Future<void> _startDownload() async {
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0.0; // Reset progress for a new download
+    });
+
+    // Simulate download steps
+    for (int i = 0; i <= 100; i += 5) {
+      await Future.delayed(const Duration(milliseconds: 200)); // Simulate network delay
+      setState(() {
+        _downloadProgress = i / 100; // Update progress from 0.0 to 1.0
+      });
+    }
+
+    setState(() {
+      _isDownloading = false;
+      // Optionally, you can set progress to 1.0 here if it didn't reach exactly 1.0 in the loop
+      _downloadProgress = 1.0;
+    });
+
+    // Show a snackbar or message when download is complete
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Download ${(_downloadProgress * 100).toInt() == 100 ? "Complete!" : "Failed!"}'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Download Demo'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              // The Download Button
+              ElevatedButton.icon(
+                onPressed: _isDownloading ? null : _startDownload, // Disable button while downloading
+                icon: _isDownloading
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        strokeWidth: 2.0,
+                      )
+                    : const Icon(Icons.download),
+                label: Text(_isDownloading
+                    ? 'Downloading... ${(_downloadProgress * 100).toInt()}%'
+                    : 'Download File'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  textStyle: const TextStyle(fontSize: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // The Linear Progress Indicator
+              if (_isDownloading)
+                Column(
+                  children: [
+                    LinearProgressIndicator(
+                      value: _downloadProgress, // Current progress
+                      minHeight: 10,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${(_downloadProgress * 100).toInt()}%', // Display percentage
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
